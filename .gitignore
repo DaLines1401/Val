@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.wrangler/
+data/user-lineups.json
+data/riot-profile.json
+.DS_Store
+Thumbs.db

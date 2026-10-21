@@ -1,0 +1,13 @@
+{
+  "name": "sova-lineup-overlay",
+  "version": "1.0.0",
+  "description": "Sova Lineup Companion, 2D Map Planner, Ballistics, Spike Timer & Eye-Care Overlay for Valorant",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "deploy:cf": "npx wrangler pages deploy src --project-name=sova-tactical-val"
+  },
+  "dependencies": {
+    "electron": "^33.0.0"
+  }
+}

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sova Tactical Lineup, Ballistics, Spike Timer & Eye-Care Overlay</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- 3. ANTI-FLASH EYE-CARE DIMMER LAYER (Always click-through) -->
+  <div id="dimmer-layer" class="dimmer-layer hidden">
+    <div class="dimmer-badge">
+      <span class="dimmer-dot"></span>
+      <span id="dimmer-status-text">ANTI-FLASH EYE SHIELD ACTIVE (Alt+F)</span>
+    </div>
+  </div>
+
+  <!-- 4. ON-SCREEN PITCH SKY-RULER OVERLAY (Click-through pitch protractor) -->
+  <div id="sky-ruler-overlay" class="sky-ruler-overlay hidden">
+    <svg id="sky-ruler-svg" class="sky-ruler-svg" viewBox="0 0 260 640" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <!-- DOUBLE SHOCK SYNC COUNTDOWN HUD BANNER (Center Top below status bar) -->
+  <div id="sync-countdown-banner" class="sync-countdown-banner hidden">
+    <div class="sync-banner-title" id="sync-phase-label">เตรียมยิงดอกที่ 1 (High Arc)...</div>
+    <div class="sync-progress-track">
+      <div id="sync-progress-fill" class="sync-progress-fill"></div>
+    </div>
+    <div class="sync-sub-metrics" id="sync-sub-metrics">
+      ดอก 1: เงย +62° (2 ขีด) ➔ รอ 1.65s ➔ ดอก 2: เงย +28° (1 ขีด)
+    </div>
+  </div>
+
+  <!-- 6. BUY-PHASE (30s) & RIOT FAIR-PLAY SAFE MODE BANNER (Alt+B) -->
+  <div id="buy-phase-banner" class="buy-phase-banner hidden">
+    <div class="buy-phase-top">
+      <span class="buy-badge">🛡️ RIOT FAIR-PLAY BUY PHASE</span>
+      <span id="buy-phase-clock" class="buy-clock">30.0s</span>
+    </div>
+    <div class="buy-progress-track">
+      <div id="buy-progress-fill" class="buy-progress-fill"></div>
+    </div>
+    <div id="buy-phase-status" class="buy-status">
+      เลือก Lineup และเดินไปจุดยืนยิง (เมื่อครบ 30s แผนที่จะพับเก็บ + เปิดโหมดทะลุเมาส์อัตโนมัติ)
+    </div>
+  </div>
+
+  <!-- 7. RIOT DEVELOPER API & SOVA MASTERY PROFILE MODAL -->
+  <div id="riot-profile-modal" class="riot-profile-modal interactive-zone hidden">
+    <div class="riot-modal-header">
+      <h3>🏆 Riot Developer API & Sova Mastery Profile</h3>
+      <button id="btn-close-riot-modal" class="btn-icon-danger">✕</button>
+    </div>
+
+    <div class="riot-form-grid">
+      <div>
+        <label class="riot-label">Riot ID (GameName#TagLine)</label>
+        <input type="text" id="riot-id-input" class="val-input" placeholder="เช่น SovaMain#TH1" />
+      </div>
+      <div>
+        <label class="riot-label">Shard / โซนเซิร์ฟเวอร์</label>
+        <select id="riot-shard-select" class="val-select">
+          <option value="ap" selected>AP (Asia Pacific / ไทย / สิงคโปร์)</option>
+          <option value="kr">KR (Korea)</option>
+          <option value="eu">EU (Europe)</option>
+          <option value="na">NA (North America)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="riot-key-row">
+      <label class="riot-label">Riot API Key (Optional — จาก developer.riotgames.com สำหรับเช็ก ACCOUNT-V1 & VAL-STATUS-V1)</label>
+      <div class="riot-key-flex">
+        <input type="password" id="riot-apikey-input" class="val-input" placeholder="RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (เว้นว่างเพื่อใช้โหมด Local Mastery)" />
+        <button id="btn-sync-riot" class="btn-primary-sm">ซิงค์ข้อมูล Riot</button>
+      </div>
+    </div>
+
+    <div id="riot-sync-result" class="riot-sync-result">
+      สถานะ: พร้อมใช้งานโหมด Sova Local Mastery & Official Callouts
+    </div>
+
+    <div class="mastery-section">
+      <h4>📊 สถิติ Sova Map Mastery & ความแม่นยำ Lineup รายด่าน</h4>
+      <div id="mastery-grid" class="mastery-grid"></div>
+    </div>
+  </div>
+
+  <!-- 5. SPIKE PLANT / POST-PLANT 45s / DEFUSE 7s TIMELINE HUD BANNER -->
+  <div id="spike-hud-banner" class="spike-hud-banner hidden">
+    <div class="spike-hud-top">
+      <div class="spike-mode-badge" id="spike-mode-badge">💣 SPIKE PLANTED</div>
+      <div class="spike-clock" id="spike-clock">45.0s</div>
+      <div class="spike-action-cue" id="spike-action-cue">รอจังหวะปล่อยลูกธนู...</div>
+    </div>
+
+    <!-- Main 45s / 4s Timeline Track with Critical Threshold Markers -->
+    <div class="spike-timeline-wrap">
+      <div class="spike-timeline-track">
+        <div id="spike-timeline-fill" class="spike-timeline-fill"></div>
+        <!-- Markers for 45s post-plant mode -->
+        <div id="marker-20s" class="spike-marker" style="left: 55.5%" title="เหลือ 20.0s (เสียงติ๊ดถี่ขึ้น)">
+          <span>20s</span>
+        </div>
+        <div id="marker-10s" class="spike-marker" style="left: 77.7%" title="เหลือ 10.0s (เสียงติ๊ดรัว)">
+          <span>10s</span>
+        </div>
+        <div id="marker-7s" class="spike-marker critical" style="left: 84.4%" title="เหลือ 7.0s (เส้นตายกู้ระเบิด Point of No Return)">
+          <span>7s เส้นตาย</span>
+        </div>
+        <!-- Dynamic Arrow Launch Window Marker based on Flight Time -->
+        <div id="marker-launch" class="spike-marker launch-marker" style="left: 75%">
+          <span id="marker-launch-label">🏹 ยิง!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sub-bar for Active Defuse (7.0s Full / 3.5s Half) when Alt+D is pressed -->
+    <div id="defuse-sub-bar" class="defuse-sub-bar hidden">
+      <div class="defuse-top">
+        <span class="defuse-title">🔧 ศัตรูกำลังแตะกู้ SPIKE! (Defusing 7.0s)</span>
+        <span id="defuse-clock" class="defuse-clock">7.0s</span>
+      </div>
+      <div class="defuse-track">
+        <div id="defuse-fill" class="defuse-fill"></div>
+        <div class="defuse-half-line" style="left: 50%">
+          <span>ครึ่งหลอด (3.5s)</span>
+        </div>
+        <div id="defuse-shoot-line" class="defuse-shoot-line" style="left: 30%">
+          <span id="defuse-shoot-label">🔥 ยิงตัดกู้!</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="spike-hud-footer" id="spike-hud-footer">
+      <span><kbd>Alt+P</kbd> เริ่มวาง (4s)</span>
+      <span><kbd>Alt+S</kbd> วางเสร็จ (45s)</span>
+      <span><kbd>Alt+D</kbd> ได้ยินเสียงแตะกู้ (7s)</span>
+    </div>
+  </div>
+
+  <!-- TOP STATUS PILL (Always visible at top center for quick status & hotkeys) -->
+  <div id="top-bar" class="top-bar interactive-zone">
+    <div class="brand">
+      <span class="sova-diamond">◆</span>
+      <span class="brand-title">SOVA TACTICAL PRO</span>
+    </div>
+    <div class="hotkey-pills">
+      <button id="btn-toggle-planner" class="hk-pill active" title="เปิด/ปิด แผนที่ 2D & คำนวณวิถี (Alt+L)">
+        <kbd>Alt+L</kbd> แผนที่ 2D
+      </button>
+      <button id="btn-buy-phase" class="hk-pill buy-btn" title="เริ่ม Buy Phase 30s — พับเก็บแผนที่และเปิด Ghost Mode อัตโนมัติเมื่อเริ่มรอบ (Alt+B)">
+        <kbd>Alt+B</kbd> Buy Phase (30s)
+      </button>
+      <button id="btn-toggle-ruler" class="hk-pill" title="เปิด/ปิด สเกลวัดมุมเงยกลางจอ Sky-Ruler (Alt+R)">
+        <kbd>Alt+R</kbd> สเกลวัดมุม
+      </button>
+      <button id="btn-sync-timer" class="hk-pill sync-btn" title="เคาะจังหวะยิง Double Shock ให้ตกพร้อมกัน (Alt+T)">
+        <kbd>Alt+T</kbd> ช็อตคู่
+      </button>
+      <button id="btn-spike-planting" class="hk-pill spike-btn" title="ได้ยินเสียงเริ่มกดวาง Spike 4.0s (Alt+P)">
+        <kbd>Alt+P</kbd> เริ่มวาง (4s)
+      </button>
+      <button id="btn-spike-planted" class="hk-pill spike-btn" title="วาง Spike เสร็จแล้ว เริ่มนับ 45.0s (Alt+S)">
+        <kbd>Alt+S</kbd> วางแล้ว (45s)
+      </button>
+      <button id="btn-spike-defuse" class="hk-pill defuse-btn" title="ได้ยินเสียงแตะกู้ Spike 7.0s (Alt+D)">
+        <kbd>Alt+D</kbd> แตะกู้ (7s)
+      </button>
+      <button id="btn-ghost-mode" class="hk-pill" title="โหมดทะลุเมาส์ (Alt+G)">
+        <kbd>Alt+G</kbd> <span id="ghost-label">คลิกได้</span>
+      </button>
+      <button id="btn-trigger-dimmer" class="hk-pill dimmer-btn" title="ลดแสงจ้าถนอมสายตาชั่วคราว (Alt+F)">
+        <kbd>Alt+F</kbd> กันแฟลช
+      </button>
+      <button id="btn-open-riot-modal" class="hk-pill riot-btn" title="ตั้งค่า Riot ID / API & ดูสถิติ Sova Mastery">
+        🏆 Riot ID
+      </button>
+    </div>
+    <div class="top-controls">
+      <label class="opacity-ctrl" title="ปรับความโปร่งใสของโพย">
+        <span>โปร่งใส</span>
+        <input type="range" id="hud-opacity-slider" min="35" max="100" value="92" />
+      </label>
+      <button id="btn-quit" class="btn-icon-danger" title="ปิดโปรแกรม">✕</button>
+    </div>
+  </div>
+
+  <!-- 1. COMPACT LINEUP REFERENCE HUD (Pinned Corner Card) -->
+  <aside id="hud-card" class="hud-card interactive-zone">
+    <div class="hud-header">
+      <div class="hud-badge-group">
+        <span id="hud-map-badge" class="badge badge-map">ASCENT</span>
+        <span id="hud-side-badge" class="badge badge-attack">ATTACK</span>
+        <span id="hud-ability-badge" class="badge badge-recon">RECON BOLT</span>
+      </div>
+      <div class="hud-quick-slots" id="hud-quick-slots" title="กด Alt+1..5 เพื่อสลับโพยด่วน"></div>
+    </div>
+
+    <h3 id="hud-title" class="hud-title">A Site God Recon (หน้าตึก A Main)</h3>
+
+    <!-- Visual Sova Crosshair & Charge Reference Diagram -->
+    <div class="hud-visual-box" id="hud-visual-box">
+      <img id="hud-custom-img" class="hud-custom-img hidden" alt="Lineup Reference" />
+      <svg id="hud-diagram-svg" class="hud-diagram-svg" viewBox="0 0 360 190" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="hud-visual-Overlay-tag" id="hud-aim-align-tag">HUD Align: Left Charge Bar</div>
+    </div>
+
+    <!-- Ballistics Angle & Flight Time Telemetry Bar -->
+    <div class="hud-telemetry-grid">
+      <div class="tele-item">
+        <span class="tele-label">ระยะทาง</span>
+        <span id="hud-tele-dist" class="tele-val">38.4 m</span>
+      </div>
+      <div class="tele-item">
+        <span class="tele-label">มุมหัน (YAW)</span>
+        <span id="hud-tele-yaw" class="tele-val">351° N</span>
+      </div>
+      <div class="tele-item">
+        <span class="tele-label">มุมเงย (PITCH)</span>
+        <span id="hud-tele-pitch" class="tele-val highlight-amber">+44.5°</span>
+      </div>
+      <div class="tele-item">
+        <span class="tele-label">เวลาลอย (TOF)</span>
+        <span id="hud-tele-tof" class="tele-val highlight-cyan">2.35 s</span>
+      </div>
+    </div>
+
+    <!-- Spike Launch Timing Summary inside HUD Card -->
+    <div class="hud-spike-timing-box" id="hud-spike-timing-box">
+      <div class="spike-timing-row">
+        <span>⏱ ดักคนกำลังวาง (4s):</span>
+        <strong id="hud-timing-plant">ต้องยิงภายใน 1.65s หลังเริ่มวาง</strong>
+      </div>
+      <div class="spike-timing-row">
+        <span>⏱ ดักคนแตะกู้ (7s):</span>
+        <strong id="hud-timing-defuse">ยิงภายใน 4.65s (ครึ่งหลอด: 1.15s)</strong>
+      </div>
+    </div>
+
+    <!-- Sova Charge & Bounce Bar Widget -->
+    <div class="sova-hud-meters">
+      <div class="meter-block">
+        <span class="meter-label">CHARGE BARS (ขีดความแรง)</span>
+        <div class="charge-bars" id="hud-charge-bars">
+          <div class="bar-seg active"></div>
+          <div class="bar-seg"></div>
+          <div class="bar-seg"></div>
+        </div>
+        <span id="hud-charge-text" class="meter-val">1 ขีด (1 Bar)</span>
+      </div>
+      <div class="meter-block">
+        <span class="meter-label">BOUNCES (จำนวนชิ่ง)</span>
+        <div class="bounce-diamonds" id="hud-bounce-diamonds">
+          <span class="diamond">◇</span>
+          <span class="diamond">◇</span>
+        </div>
+        <span id="hud-bounce-text" class="meter-val">ไม่ชิ่ง (0 Bounce)</span>
+      </div>
+    </div>
+
+    <div class="hud-notes-box">
+      <div class="aim-ref-line" id="hud-aim-ref">เล็งให้มุมซ้ายของแถบชาร์จทาบกับมุมปล่องไฟเหนือตึก A Site</div>
+      <p class="notes-text" id="hud-notes">ยืนชิดมุมกล่องไวน์หน้า A Main เล็งขึ้นฟ้าเหนือหลังคา ชาร์จ 1 ขีดเต็ม</p>
+    </div>
+
+    <div class="hud-footer">
+      <span>เริ่มวาง: <kbd>Alt+P</kbd></span>
+      <span>วางเสร็จ: <kbd>Alt+S</kbd></span>
+      <span>แตะกู้: <kbd>Alt+D</kbd></span>
+    </div>
+  </aside>
+
+  <!-- 2. INTERACTIVE 2D MAP LINEUP PLANNER & BALLISTICS SIMULATOR MODAL -->
+  <main id="planner-modal" class="planner-modal interactive-zone">
+    <div class="planner-sidebar">
+      <div class="sidebar-section">
+        <div class="section-header">
+          <h2>1. เลือกด่าน & สกิล</h2>
+          <span id="api-status" class="api-badge">กำลังซิงค์ Valorant-API...</span>
+        </div>
+
+        <div class="filter-row">
+          <select id="map-select" class="val-select"></select>
+        </div>
+
+        <div class="filter-tabs" id="ability-tabs">
+          <button class="tab-btn active" data-ability="ALL">ทั้งหมด</button>
+          <button class="tab-btn recon" data-ability="Recon Bolt">
+            <img id="icon-recon" class="tab-icon hidden" alt="" /> Recon
+          </button>
+          <button class="tab-btn shock" data-ability="Shock Bolt">
+            <img id="icon-shock" class="tab-icon hidden" alt="" /> Shock Dart
+          </button>
+        </div>
+
+        <div class="filter-tabs" id="side-tabs">
+          <button class="tab-btn active" data-side="ALL">ทุกฝั่ง</button>
+          <button class="tab-btn" data-side="Attack">ฝ่ายบุก (Attack)</button>
+          <button class="tab-btn" data-side="Defense">ฝ่ายรับ (Defense)</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section lineup-list-section">
+        <div class="section-header">
+          <h2>รายการ Lineups (<span id="lineup-count">0</span>)</h2>
+          <button id="btn-new-lineup" class="btn-primary-sm">+ เพิ่มจุดเล็งใหม่</button>
+        </div>
+        <div id="lineup-list" class="lineup-list"></div>
+      </div>
+
+      <!-- 3. ANTI-FLASH EYE-CARE SETTINGS PANEL -->
+      <div class="sidebar-section dimmer-settings-section">
+        <div class="section-header">
+          <h2>ตั้งค่าถนอมสายตา (<kbd>Alt+F</kbd>)</h2>
+        </div>
+        <div class="setting-row">
+          <label>ลดแสงจ้า</label>
+          <input type="range" id="dimmer-strength" min="40" max="92" value="78" />
+          <span id="dimmer-strength-val">78%</span>
+        </div>
+        <div class="setting-row">
+          <label>โทนสี</label>
+          <select id="dimmer-tone" class="val-select-sm">
+            <option value="warm">Warm Amber (ตัดแสงฟ้า)</option>
+            <option value="slate">Dark Tactical Slate</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label>เวลาคลาย</label>
+          <select id="dimmer-duration" class="val-select-sm">
+            <option value="2200">2.2 วินาที (อัตโนมัติ)</option>
+            <option value="3000">3.0 วินาที</option>
+            <option value="0">กด Alt+F ซ้ำเพื่อปิด</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER 2D INTERACTIVE MAP + HYBRID BALLISTICS SIMULATOR -->
+    <div class="planner-map-area">
+      <div class="map-toolbar">
+        <div class="map-legend">
+          <span class="legend-item"><i class="dot stand-dot"></i> คลิกซ้าย = จุดยืน</span>
+          <span class="legend-item"><i class="dot recon-dot"></i> คลิกขวา = จุดตก</span>
+          <span id="callout-route-badge" class="callout-route-badge">📍 A Main ➔ A Site</span>
+        </div>
+        <div class="map-toolbar-right">
+          <button id="btn-toggle-callouts" class="btn-secondary-xs active" title="แสดง/ซ่อนชื่อจุด Callouts ทางการจาก Valorant API">
+            📍 ป้ายชื่อจุด Callouts: เปิด
+          </button>
+          <div id="creation-banner" class="creation-banner hidden">
+            <span id="creation-step-text">ขั้นที่ 1: คลิกบนแผนที่เพื่อปัก <b>จุดยืนยิง (Stand)</b></span>
+            <button id="btn-cancel-create" class="btn-secondary-xs">ยกเลิก</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="map-and-sim-split">
+        <!-- 2D Map Stage -->
+        <div class="map-canvas-wrapper" id="map-canvas-wrapper">
+          <div class="map-stage" id="map-stage" title="คลิกซ้าย = ตั้งจุดยืน | คลิกขวา = ตั้งจุดตกเพื่อคำนวณองศา">
+            <img id="map-image" class="map-image" alt="2D Map" draggable="false" />
+            <svg id="map-fallback-svg" class="map-fallback-svg hidden" viewBox="0 0 100 100"></svg>
+            <svg id="map-overlay-svg" class="map-overlay-svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+          </div>
+        </div>
+
+        <!-- HYBRID BALLISTICS & DOUBLE SHOCK SYNC PANEL -->
+        <div class="ballistics-panel">
+          <div class="sim-card">
+            <div class="sim-header">
+              <h3>🎯 Hybrid Ballistics & Angle Calculator</h3>
+              <span class="sim-tag">ปรับองศา ⇄ คลิกจุดตก</span>
+            </div>
+
+            <div class="sim-sliders">
+              <div class="sim-slider-row">
+                <label>มุมหันราบ (Yaw)</label>
+                <input type="range" id="sim-yaw" min="0" max="359" value="350" />
+                <span id="sim-yaw-val" class="sim-num">350°</span>
+              </div>
+              <div class="sim-slider-row">
+                <label>มุมเงย (Pitch)</label>
+                <input type="range" id="sim-pitch" min="5" max="82" value="45" />
+                <span id="sim-pitch-val" class="sim-num">+45°</span>
+              </div>
+              <div class="sim-slider-row">
+                <label>ขีดชาร์จ (Charge)</label>
+                <input type="range" id="sim-charge" min="0" max="3" step="1" value="1" />
+                <span id="sim-charge-val" class="sim-num">1 ขีด</span>
+              </div>
+            </div>
+
+            <div class="sim-hint">
+              💡 <b>Spike Audio Timing:</b> เมื่อได้ยินเสียงเริ่มวางกด <kbd>Alt+P</kbd>, วางเสร็จกด <kbd>Alt+S</kbd>, หรือได้ยินเสียงแตะกู้กด <kbd>Alt+D</kbd> ระบบจะหักลบ Flight Time แล้วร้องเตือนจังหวะปล่อยลูกธนูทันที!
+            </div>
+          </div>
+
+          <!-- SIDE-ELEVATION PARABOLA GRAPH & DOUBLE SHOCK SYNC -->
+          <div class="sim-card parabola-card">
+            <div class="sim-header">
+              <h3>⚡ Double Shock Sync & Side-View Arc</h3>
+              <button id="btn-panel-sync" class="btn-amber-xs" title="กด Alt+T เพื่อเริ่มเคาะจังหวะยิง">▶ เคาะจังหวะ (Alt+T)</button>
+            </div>
+
+            <svg id="parabola-svg" class="parabola-svg" viewBox="0 0 360 135" xmlns="http://www.w3.org/2000/svg"></svg>
+
+            <div class="double-shock-recipe" id="double-shock-recipe">
+              <div class="recipe-box high-arc">
+                <div class="recipe-title">ดอกที่ 1 (High Arc / ยิงโด่ง)</div>
+                <div class="recipe-vals" id="recipe-shot1">ชาร์จ 2 ขีด • เงย +64° • ลอย 3.45s</div>
+              </div>
+              <div class="recipe-delay" id="recipe-delay">
+                <span>⏱ รอจังหวะ</span>
+                <strong id="recipe-delay-val">1.60 วินาที</strong>
+              </div>
+              <div class="recipe-box low-arc">
+                <div class="recipe-title">ดอกที่ 2 (Low Arc / ยิงพุ่ง)</div>
+                <div class="recipe-vals" id="recipe-shot2">ชาร์จ 1 ขีด • เงย +26° • ลอย 1.85s</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEW LINEUP FORM DRAWER (Shown when adding custom lineup) -->
+      <div id="create-form-panel" class="create-form-panel hidden">
+        <h3>บันทึก Lineup ใหม่ลงในแผนที่ (<span id="form-map-name">Ascent</span>)</h3>
+        <div class="form-grid">
+          <input type="text" id="input-title" class="val-input" placeholder="ชื่อจุดเล็ง (เช่น A Main God Recon)" />
+          <select id="input-ability" class="val-select-sm">
+            <option value="Recon Bolt">Recon Bolt (ธนูสแกน)</option>
+            <option value="Shock Bolt">Shock Bolt (ธนูช็อต)</option>
+          </select>
+          <select id="input-side" class="val-select-sm">
+            <option value="Attack">ฝ่ายบุก (Attack)</option>
+            <option value="Defense">ฝ่ายรับ (Defense)</option>
+          </select>
+          <select id="input-charges" class="val-select-sm">
+            <option value="0">แตะยิง (0 ขีด)</option>
+            <option value="1" selected>ชาร์จ 1 ขีด</option>
+            <option value="2">ชาร์จ 2 ขีด</option>
+            <option value="3">ชาร์จ 3 ขีด (เต็ม)</option>
+          </select>
+          <select id="input-bounces" class="val-select-sm">
+            <option value="0" selected>ไม่ชิ่ง (0 Bounce)</option>
+            <option value="1">ชิ่ง 1 ครั้ง (1 Bounce)</option>
+            <option value="2">ชิ่ง 2 ครั้ง (2 Bounces)</option>
+          </select>
+        </div>
+        <div class="form-row-2">
+          <input type="text" id="input-aimref" class="val-input" placeholder="จุดสังเกตวิธีเล็ง (เช่น ทาบมุมซ้ายขีดชาร์จกับมุมตึก)" />
+          <input type="text" id="input-notes" class="val-input" placeholder="รายละเอียดเพิ่มเติม (เช่น ยืนชิดมุมกล่อง กดกระโดดยิง)" />
+        </div>
+        <div class="form-actions">
+          <label class="upload-btn">
+            📷 แนบรูปจุดเล็ง (หรือกด Ctrl+V วางรูปแคปจอ)
+            <input type="file" id="input-image-file" accept="image/*" hidden />
+          </label>
+          <span id="paste-img-status" class="paste-status">ยังไม่ได้แนบรูป (จะใช้ไดอะแกรมจำลองอัตโนมัติ)</span>
+          <div class="spacer"></div>
+          <button id="btn-save-lineup" class="btn-primary-sm">บันทึก Lineup</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
