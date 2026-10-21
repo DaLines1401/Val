@@ -1,10 +1,7 @@
 @echo off
-title Deploy Sova Tactical Overlay to Cloudflare Pages
+title Deploy Sova Tactical Overlay to Cloudflare
 cd /d "%~dp0"
-echo Step 1: Logging in to Cloudflare (if not already logged in)...
-call npx wrangler login
-echo Step 2: Creating Cloudflare Pages project (if not created yet)...
-call npx wrangler pages project create sova-tactical-val --production-branch=main
-echo Step 3: Deploying to Cloudflare Pages...
-call npx wrangler pages deploy src --project-name=sova-tactical-val --branch=main
+set CLOUDFLARE_ACCOUNT_ID=ff9b6ddd56cfd9441c5d7a21f6031922
+echo Deploying to https://sova-tactical-val.val-dalines.workers.dev ...
+call npx wrangler deploy
 pause

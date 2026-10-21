@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare Pages
+name: Deploy to Cloudflare
 
 on:
   push:
@@ -13,14 +13,14 @@ jobs:
     permissions:
       contents: read
       deployments: write
-    name: Deploy to Cloudflare Pages
+    name: Deploy to Cloudflare
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Publish to Cloudflare Pages
+      - name: Publish to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ff9b6ddd56cfd9441c5d7a21f6031922
-          command: pages deploy src --project-name=sova-tactical-val
+          command: deploy
